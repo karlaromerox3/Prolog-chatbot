@@ -3,13 +3,21 @@
 
 :- use_module(library(random)).
 beginChat:-
-  welcome_message.
+  welcome_message,
+  instructions.
 
 welcome_message:-
   replies_kb(greeting, X), 
   random_n(X,Y), 
-  show(me),
+  prompt(me),
   print_sentence(Y),
+  flush_output.
+
+instructions:-
+  prompt(me),
+  write('You can ask me about the processes to add a new device to our global network.' ), nl,
+  prompt(me),
+  write('How can I help you today?'), nl,
   flush_output.
 
 
@@ -18,7 +26,7 @@ welcome_message:-
 %% You is the user
 prompt(me):-
         my_name(X), write(X), write(': '), flush_output.
-promp(you):-
+prompt(you):-
         user_name(X), write(X), write(': '), flush_output.
         
 %% The prompts that will show in the chat
