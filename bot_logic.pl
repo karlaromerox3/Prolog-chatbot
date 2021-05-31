@@ -154,7 +154,7 @@ generate_reply(S, R):-
         sentence(Tree1, Rep,[]),
         append([yes, ','|Rep], ['!'], R).
 
-%% If we are trying to get information from the suer, keep trying and thank him for it
+%% If we are trying to get information from the user, keep trying and thank him for it
 generate_reply(S, R):-
         \+ is_question(S), 
         \+ information(_, _), !,
@@ -301,7 +301,7 @@ prompt(you):-
         user_name(X), write(X), write(': '), flush_output.
         
 %% The prompts that will show in the chat
-my_name('Tony').
+my_name('Alexa').
 user_name('You').
 
 
@@ -323,19 +323,6 @@ get_item([H|_], 1, H).
 get_item([_|T], N, X):-
         get_item(T, N1, X),
         N is N1 + 1.
-
-show_report:-
-        write('\n--- Report of conversation ---\n'),
-        usr_name(X), 
-        print_sentence(['Name: ', X]),
-        retract(usr_name(X)), fail.
-show_report:-
-        nl, feedback(X, Y), write(X), write(' : '), print_sentence(Y), 
-        retract(feedback(X, Y)), fail.
-show_report:-
-        nl, information(X, Y), write(X), write(' : '), print_sentence(Y), 
-        retract(information(X, Y)), fail.
-show_report.
 
 %%------ HELPER FUNCTIONS -----------------
 intersect([], _, []).
@@ -533,7 +520,11 @@ pattern_me([_|T], X):-
         pattern_me(T, X).
 
 nameList('karla').
-nameList('benji').
+nameList('cris').
+nameList('jucemar').
+nameList('alysson').
+
+
 
 %% The knowlegde base for the random different greetings
 replies_db(greeting, [
@@ -543,6 +534,7 @@ replies_db(greeting, [
         ['Nice to meet you!'],
         ['It\'s a pleasure to meet you!']
         ]).
+
 replies_db(get_printers, [
         ['Haven\'t heard of that one before!'],
         ['That\'s not a real printer...'],
@@ -610,7 +602,7 @@ responses_db(random_s, [
         ['Not sure!'],
         ['Can I get a different question?'],
         ['Oh, you\'ll have to ask someone else that.'],
-        ['Sorry, I\'m only a simple Frank.'],
+        ['Sorry, I\'m only a simple Tony.'],
         ['Sorry, I can\'t remember everything you said...'],
         ['Can you say that again?'],
         ['Now, there\'s a question.'],
@@ -665,6 +657,18 @@ printer_db([
         ]).
 
 
+show_report:-
+        write('\n--- Report of talk ---\n'),
+        usr_name(X), 
+        print_sentence(['Your name: ', X]),
+        retract(usr_name(X)), fail.
+show_report:-
+        nl, feedback(X, Y), write(X), write(' : '), print_sentence(Y), 
+        retract(feedback(X, Y)), fail.
+show_report:-
+        nl, information(X, Y), write(X), write(' : '), print_sentence(Y), 
+        retract(information(X, Y)), fail.
+show_report.
 
 
 
