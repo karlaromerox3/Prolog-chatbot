@@ -622,7 +622,7 @@ responses_db(random_s, [
         ['Please contact a human.'],
         ['Sorry, I\'m only a simple chatbot.'],
         ['I can\'t remember what you said...'],
-        ['Can you say that again?']
+        ['Can you say that again?'],
         ['No.'],
         ['Yes indeed, I agree.']
         ]).
