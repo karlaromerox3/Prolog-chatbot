@@ -2,7 +2,7 @@
 %%      swipl --quiet bot_logic.pl
 
 :- use_module(library(random)).
-:- dynamic usr_name/1, information/2, feedback/2, printer/1, loc/1.
+:- dynamic usr_name/1, information/2, feedback/2, printer/1.
 
 beginChat:-
   welcome_message,
@@ -13,7 +13,7 @@ conversate:-
         repeat,
         prompt(you),
         readin(M),
-        generate_reply(M,R),
+        reply(M,R),
         prompt(me),
         print_sentence(R),
         is_quit(M), 
@@ -26,7 +26,7 @@ conversate:-
 read_in(M):-initread(L),words(M,L,[]).
  
 %% initread will parse through the entered message list to translate to the ASCII values
-initread([K1,K2|U]):-get_code(K1),get_code(K2),readrest(K2,U).
+initread([C1,C2|U]):-get_code(C1),get_code(C2),readrest(C2,U).
 
 
 %% readrest checks for the different values of a list of ASCII codes, ignoring question marks and exclamation marks
@@ -35,9 +35,9 @@ readrest(33,[]):-!. %% Exclamation mark
 readrest(10,[]):-!. %% Line feed
 
 %% Skip the character if it is a control one
-readrest(K,[K1|U]):-K=<32,!,get_code(K1),readrest(K1,U).
+readrest(C,[C1|T]):-C=<32,!,get_code(C1),readrest(C1,T).
 %% Else, get its code and add it to the list
-readrest(_K1,[K2|U]):-get_code(K2),readrest(K2,U).
+readrest(_C1,[C2|T]):-get_code(C2),readrest(C2,T).
 
 
 %%--------------- DCG Grammar Rules ---------------------
@@ -47,37 +47,69 @@ readrest(_K1,[K2|U]):-get_code(K2),readrest(K2,U).
 %% [literals]
 
 %% words are built by a word, blank spaces and other words
-words([V|U]) --> word(V),!,blanks,words(U).
+words([H|T]) --> word(H),!,blanks,words(T).
 words([]) --> [].
 
 % a word is built either with alphanum or only digits
-word(U1) --> [K],{lc(K,K1)},!,alphanums(U2),{name(U1,[K1|U2])}.
-word(nb(N)) --> [K],{digit(K)},!,digits(U),{name(N,[K|U])}.
-word(V) --> [K],{name(V,[K])}.
+word(T1) --> [C],{lower_case(C,C1)},!,alphanums(T2),{name(T1,[C1|T2])}.
+word(num(N)) --> [C],{digit(C)},!,digits(T),{name(N,[C|T])}.
+word(V) --> [C],{name(V,[C])}.
 
-alphanums([K1|U]) --> [K],{alphanum(K,K1)},!,alphanums(U).
+alphanums([C1|T]) --> [C],{alphanum(C,C1)},!,alphanums(T).
 alphanums([]) --> [].
 
 %% An alphanum is either _ or a digit
 alphanum(95,95) :- !.
-alphanum(K,K1):-lc(K,K1).
-alphanum(K,K):-digit(K).
+alphanum(C,C1):-lower_case(C,C1).
+alphanum(C,C):-digit(C).
 
 %% Digits are built with a digit, and more digits
-digits([K|U]) --> [K],{digit(K)},!,digits(U).
+digits([C|T]) --> [C],{digit(C)},!,digits(T).
 digits([]) --> [].
 
 %% A blank space is built with one or more blank spaces
-blanks--> [K],{K=<32},!,blanks.
+blanks--> [C],{C=<32},!,blanks.
 blanks --> [].
 
 %% check if it a number
-digit(K):-K>47,K<58.
+digit(C):-C>47,C<58.
+
+sentence( s(X,Y, is, Z) ) --> belonging_phrase(X), abstract_noun(Y),  
+                              [is],  special_noun(Z).
+
+sentence(s(X, Y, Z)) --> subject_pronoun(X), indicative_verb(Y), 
+                         adjective(Z).
+
+sentence(s(X, Y, Z)) --> subject_phrase(X), verb(Y), object_phrase(Z).
+
+
+
+sentence(s(X, Y)) --> subject_tobe_verb(X), prepositional_phrase(Y).
+
+sentence(s(X, Y, Z)) --> question(X), object_pronoun(Y), noun(Z).
+
+belonging_phrase(belong(your)) --> [your].
+belonging_phrase(belong(my)) --> [my].
+
+abstract_noun(abs_noun(name)) --> [name].
+
+special_noun(sp_noun(alexa)) --> [alexa].
+special_noun(sp_noun(siri)) --> [siri].
+
+
+subject_phrase(sp(X)) --> subject_pronoun(X).
+subject_phrase(sp(X)) --> noun_phrase(X).
+
+object_phrase(op(X,Y)) --> noun_phrase(X), adverb(Y).
+object_phrase(op(X, Y)) --> object_pronoun(X), adverb(Y).
+
+noun_phrase(np(X, Y)) --> determiner(X), noun(Y).
+noun_phrase(np(Y)) --> noun(Y).
 
 
 %% Switch all letters to lower case
-lc(K,K1):-K>64,K<91,!,K1 is K+32. 
-lc(K,K):-K>96,K<123.
+lower_case(C,C1):-C>64,C<91,!,C1 is C+32. 
+lower_case(C,C):-C>96,C<123.
 
 %% filter will examine the words entered in the input stream
 
@@ -89,9 +121,9 @@ filter(['\n'|T], R):-  !,
         filter(T, R).
 
 
-filter([nb(2), X|T], [Rm|R]):- 
+filter([num(2), X|T], [Rm|R]):- 
         name(X, CharList),
-        q_followed_by_nb(CharList),!,
+        q_and_num(CharList),!,
         name(Rm, [50|CharList]),
         filter(T, R).
 
@@ -100,62 +132,62 @@ filter([X|T], [X|R]):-
         filter(T, R).
 
 
-q_followed_by_nb([113,X|_]):-
+q_and_num([113,X|_]):-
         digit(X).
 
 
-%%------------Generate generate_reply------------------------
+%%------------Generate reply------------------------
 
 %% Check if we the user entered any quit sentence
-generate_reply(S, R):-
+reply(S, R):-
         is_quit(S), !,
         replies_db(bye, Res), 
         random_n(Res, R).
 
 %% Check if the user entered any thank yu sentence
-generate_reply(S, R):-
+reply(S, R):-
         is_thanks(S), !,
         replies_db(thanked, Res), 
         random_n(Res, R).
 
 %% Check if the user asked about the bot name
-generate_reply(S, R):-
+reply(S, R):-
         question(Tree2, S, _Rest), 
         mapping(s2name,Tree1, Tree2), !,
         sentence(Tree1, Rep,[]),
         append(Rep, ['!'], R).
-generate_reply(S, R):-
+reply(S, R):-
         pattern_name(S, _), !,
         replies_db(my_name, D),
         random_n(D, R).
 
 %% Check if the user ask a HOW question
-generate_reply(S, R):-
+reply(S, R):-
         question(Tree2, S, _Rest), !, 
         mapping(s2how,Tree1, Tree2),
         sentence(Tree1, Rep,[]), !,
         append(Rep, ['!'], R).
 
 %% Check if the user asked about bot info
-generate_reply(S, R):-
+reply(S, R):-
         pattern_me(S, _), !,
         replies_db(me, D),
         random_n(D, R).
 
 %% Check if the user asked any WHY questions
-generate_reply(S, R):-
+reply(S, R):-
         sentence(Tree1, S, _Rest), !, 
         mapping(s2why,Tree1, Tree2),
         question(Tree2, Rep,[]),
         append(Rep, ['?'], R).
-generate_reply(S, R):-
+reply(S, R):-
         question(Tree2, S, _Rest), !, 
         mapping(s2q,Tree1, Tree2),
         sentence(Tree1, Rep,[]),
         append([yes, ','|Rep], ['!'], R).
 
 %% If we are trying to get information from the user, keep trying and thank him for it
-generate_reply(S, R):-
+reply(S, R):-
         \+ is_question(S), 
         \+ information(_, _), !,
         get_info(8),
@@ -163,17 +195,17 @@ generate_reply(S, R):-
         random_n(D, R).
 
 
-generate_reply(S, R):-
+reply(S, R):-
         \+ is_question(S), 
         \+ feedback(_, _), !,
         get_feedback(4),
         replies_db(thanks, D),
         random_n(D, R).
-generate_reply(S, R):-
+reply(S, R):-
         \+ is_question(S), !,
         replies_db(random_q, Res),
         random_n(Res, R).
-generate_reply(S, R):- 
+reply(S, R):- 
         is_question(S), !,
         replies_db(random_s, Res),
         random_n(Res, R).
@@ -215,40 +247,41 @@ get_info(N):-
 get_info(QL, RL):-
         get_item(QL, 1, Q),
         contains(Q, name), !,
-        get_usr_name(Q, RL).
+        get_user_name(Q, RL).
 get_info(QL, RL):-
         get_item(QL, 1, Q),
-        contains(Q, subjects), !,
-        get_printer_info_loop(RL).
+        contains(Q, printer), !,  %% If the sentence said by the bot has the word printer, check that a valid printer is entered
+        get_printer_loop(RL).
+
 get_info(_, _).
 
 
 
-get_usr_name(Q):-
+get_user_name(Q):-
         prompt(you),
         readin(S),
-        get_usr_name(Q, S).
-get_usr_name(_, RL):-
+        get_user_name(Q, S).
+get_user_name(_, RL):-
         is_valid_name(RL), !.
-get_usr_name(Q, _):-
+get_user_name(Q, _):-
         replies_db(get_name, D), 
         random_n(D, X), 
         prompt(me),
         print_sentence(X),
-        get_usr_name(Q).
+        get_user_name(Q).
 
-get_printer_info_loop:-
+get_printer_loop:-
         prompt(you),
         readin(S),
-        get_printer_info_loop(S).
-get_printer_info_loop(S):- 
+        get_printer_loop(S).
+get_printer_loop(S):- 
         is_valid_printer(S), !.
-get_printer_info_loop(_):- 
+get_printer_loop(_):- 
         replies_db(get_printers, D),
         random_n(D, R),
         prompt(me),
         print_sentence(R),
-        get_printer_info_loop.
+        get_printer_loop.
 
 get_feedback(0).
 get_feedback(N):-
@@ -350,38 +383,7 @@ contains(A, B) :-
   append(_, L2, L),
   append(S, _, L2).
 
-sentence( s(X,Y, is, Z) ) --> belonging_phrase(X), abstract_noun(Y),  
-                              [is],  special_noun(Z).
-
-sentence(s(X, Y, Z)) --> subject_pronoun(X), indicative_verb(Y), 
-                         adjective(Z).
-
-sentence(s(X, Y, Z)) --> subject_phrase(X), verb(Y), object_phrase(Z).
-
-
-
-sentence(s(X, Y)) --> subject_tobe_verb(X), prepositional_phrase(Y).
-
-sentence(s(X, Y, Z)) --> question(X), object_pronoun(Y), noun(Z).
-
-belonging_phrase(belong(your)) --> [your].
-belonging_phrase(belong(my)) --> [my].
-
-abstract_noun(abs_noun(name)) --> [name].
-
-special_noun(sp_noun(melvin)) --> [melvin].
-special_noun(sp_noun(tony)) --> [tony].
-
-
-subject_phrase(sp(X)) --> subject_pronoun(X).
-subject_phrase(sp(X)) --> noun_phrase(X).
-
-object_phrase(op(X,Y)) --> noun_phrase(X), adverb(Y).
-object_phrase(op(X, Y)) --> object_pronoun(X), adverb(Y).
-
-noun_phrase(np(X, Y)) --> determiner(X), noun(Y).
-noun_phrase(np(Y)) --> noun(Y).
-
+%%---------------DICTIONARIES FOR DCG-----------------------
 
 preposition(prep(in)) --> [in].
 preposition(prep(at)) --> [at].
@@ -414,20 +416,29 @@ determiner(dtmnr([some])) --> [some].
 determiner(dtmnr([all])) --> [all].
 determiner(dtmnr([that])) --> [that].
 
-noun(noun(uwe)) --> [uwe].
-noun(noun(cs_course)) --> [cs_course].
-noun(noun(robotics_course)) --> [robotics_course].
-noun(noun(robotics_course)) --> [computing_course].
-noun(noun(robotics_course)) --> [sd_course].
-noun(noun(name)) --> [name].
+%% Most common nouns
+noun(noun(time)) --> [time].
+noun(noun(person)) --> [person].
+noun(noun(year)) --> [year].
+noun(noun(way)) --> [day].
+noun(noun(thing)) --> [thing].
+noun(noun(world)) --> [world].
+noun(noun(man)) --> [man].
 
 adverb(ad([very, much])) --> [very, much].
-adverb(ad([how])) --> [how].
+adverb(ad([very])) --> [very].
+adverb(ad([also])) --> [also].
+adverb(ad([often])) --> [often].
+adverb(ad([not])) --> [not].
 adverb(ad([])) --> [].
 
+verb(vb(want)) --> [want].
+verb(vb(use)) --> [use].
+verb(vb(work)) --> [work].
 verb(vb(like)) --> [like].
 verb(vb(love)) --> [love].
 verb(vb(is)) --> [is].
+
 
 indicative_verb(ivb(are)) --> [are].
 indicative_verb(ivb(am)) --> [am].
@@ -435,17 +446,24 @@ indicative_verb(ivb(am)) --> [am].
 subject_tobe_verb(s_2b([you, are])) --> [you, are].
 subject_tobe_verb(s_2b([i,am])) --> [i, am].
 subject_tobe_verb(s_2b([we, are])) --> [we, are].
+subject_tobe_verb(s_2b([he, is])) --> [he, is].
+subject_tobe_verb(s_2b([she, is])) --> [she, is].
 
+adjective(adj(awesome)) --> [awesome].
+adjective(adj([just,fine])) --> [just,fine].
 adjective(adj(great)) --> [great].
 adjective(adj(good)) --> [good].
 adjective(adj(fine)) --> [fine].
 
+%%------- DEFINING COMPUND DCG---------------
 question(q(why,do,S)) --> [why, do], sentence(S).
 question(q(do,S)) --> [do], sentence(S).
 
 question(q(X, Y, Z)) --> adverb(X), indicative_verb(Y), subject_pronoun(Z).
 question( q( what, is, X, Y ) ) -->  [what, is],  belonging_phrase(X),  
                                      abstract_noun(Y).   
+
+%%------------Mapping of the tokens----------------
 
 mapping(s2why, 
         s(sp(spn(N1)),vb(V),op(opn(N2),ad(X))),
@@ -485,8 +503,8 @@ mapping(s2how,
 mapping_belong(my,your).
 mapping_belong(your,my).
 
-mapping_noun(name, tony).
-mapping_noun(tony, name).
+mapping_noun(name, alexa).
+mapping_noun(alexa, name).
 
 mapping_indicative(are, am).
 mapping_indicative(am, are).
@@ -501,7 +519,7 @@ mapping_opn(you,me).
 mapping_opn(me,you).
 
 
-%%------ PATTERNS ------------------
+%%------------- PATTERNS ------------------
 pattern_name([what, is, your, name, X |_], X):-!.
 pattern_name(['what\'s', your, name, X |_], X):-!.
 pattern_name([whats, your, name, X |_], X):-!.
@@ -519,6 +537,8 @@ pattern_me([you, okay, X |_], X):-!.
 pattern_me([_|T], X):-
         pattern_me(T, X).
 
+
+%%------- Possible names for the user ----------
 nameList('karla').
 nameList('cris').
 nameList('jucemar').
@@ -543,10 +563,10 @@ replies_db(get_printers, [
 
 
 replies_db(my_name, [
-        ['My name is Tony, nice to meet you.'],
-        ['I\'m Tony!'],
+        ['My name is Alexa, nice to meet you.'],
+        ['I\'m Alexa!'],
         ['My name isn\'t important right now.'],
-        ['Tony, at your service, how may I help?']
+        ['Alexa, at your service, how may I help?']
         ]).
 
 replies_db(thanks, [
@@ -602,7 +622,7 @@ responses_db(random_s, [
         ['Not sure!'],
         ['Can I get a different question?'],
         ['Oh, you\'ll have to ask someone else that.'],
-        ['Sorry, I\'m only a simple Tony.'],
+        ['Sorry, I\'m only a simple Alexa.'],
         ['Sorry, I can\'t remember everything you said...'],
         ['Can you say that again?'],
         ['Now, there\'s a question.'],
@@ -622,11 +642,11 @@ questions_db(feedback, [
 
 questions_db(info, [
         ['Finally, run the proper tests.'],
-        ['To request a printing queue, contact the Basis Team through DC'],
-        ['Ask the Security global team to add this IP to the firewalls through Digital Concierge'],
-        ['The next step is to ask Adriano to add the translation to the fortigate'],
-        ['Okay, please assign a Kellogg Network IP and document it in ...'],
-        ['Right now, what\'s the inside IP for the printer?'],
+        ['To request a printing queue, contact the Basis Team '],
+        ['Ask the Security global team to add this IP to the firewalls'],
+        ['The next step is to ask the regional team to add the translation to the fortigate'],
+        ['Okay, please assign a Company Network IP and document it'],
+        ['Right now, what\'s the inside IP for the device?'],
         ['Nice to meet you. What brand and model is the printer?'],
         ['What\'s your name?']
         ]).
@@ -657,8 +677,9 @@ printer_db([
         ]).
 
 
+%% Show the conversation report 
 show_report:-
-        write('\n--- Report of talk ---\n'),
+        write('\n--- Conversation history ---\n'),
         usr_name(X), 
         print_sentence(['Your name: ', X]),
         retract(usr_name(X)), fail.
