@@ -565,7 +565,6 @@ replies_db(get_printers, [
 replies_db(my_name, [
         ['My name is Alexa, nice to meet you.'],
         ['I\'m Alexa!'],
-        ['My name isn\'t important right now.'],
         ['Alexa, at your service, how may I help?']
         ]).
 
@@ -583,7 +582,6 @@ replies_db(thanks, [
 replies_db(get_name, [
         ['Is that your real name?'],
         ['That\'s not your real name...'],
-        ['That can\'t be your name.'],
         ['Just tell me your name...'],
         ['I need to know your name!'],
         ['Come on, what are you called?']
@@ -593,51 +591,49 @@ replies_db(get_name, [
 
 replies_db(thanked, [
         ['You\'re welcome!'],
+        ['No problem.'],
         ['Any time.'],
-        ['Glad to be of service.'],
-        ['No worries.'],
-        ['No problem.']
+        ['Glad to be of help.'],
+        ['No worries.']
         ]).
 
 replies_db(bye, [
         ['Bye!'], 
-        ['Hope to see you again.'], 
+        ['Hope to see you soon.'], 
         ['Have a nice day!']
         ]).
 
 
 responses_db(random_q, [
-        ['Isn\'t it a nice day?'],
+        ['Isn\'t it a fine day?'],
         ['Ok.'],
-        ['What do you mean?'],
+        ['I\'m sorry, what do you mean?'],
         ['How rude.'],
-        ['You\'re quite rude, aren\'t you?'],
+        ['You\'re quite rude.'],
         ['What?'],
         ['Excuse me?']
         ]).
 
 responses_db(random_s, [
-        ['I dunno...'],
+        ['I really don\'t know...'],
         ['Sorry, I can\'t answer that one.'],
-        ['Not sure!'],
-        ['Can I get a different question?'],
-        ['Oh, you\'ll have to ask someone else that.'],
-        ['Sorry, I\'m only a simple Alexa.'],
-        ['Sorry, I can\'t remember everything you said...'],
-        ['Can you say that again?'],
-        ['Now, there\'s a question.'],
-        ['Who knows!'],
-        ['No. Just no.'],
-        ['Yes, I agree.']
+        ['I am not quite sure!'],
+        ['Can you ask again?'],
+        ['Please contact a human.'],
+        ['Sorry, I\'m only a simple chatbot.'],
+        ['I can\'t remember what you said...'],
+        ['Can you say that again?']
+        ['No.'],
+        ['Yes indeed, I agree.']
         ]).
 
 
 
 questions_db(feedback, [
-        ['Okay. Did you find any of the talks interesting?'],
-        ['Hmm. Do you think that I am a human?'],
-        ['Ok, thanks. Have I been helpful?'],
-        ['So, what are your thoughts to make me better?']
+        ['Okay. Was the information useful?'],
+        ['Alright, did I help you?'],
+        ['Well, have I been helpful for you?'],
+        ['Do you have any thoughts on how could I improve?']
         ]).
 
 questions_db(info, [
